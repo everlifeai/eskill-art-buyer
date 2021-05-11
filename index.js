@@ -114,7 +114,7 @@ function sendReplies(replies, req) {
     function send_replies_1(ndx) {
         if(ndx >= replies.length) return
         sendReply(replies[ndx], req)
-        setTimeout(() => send_replies_1(ndx+1), 2500)
+        setTimeout(() => send_replies_1(ndx+1), 1200)
     }
 }
 
@@ -152,10 +152,15 @@ function startMicroService() {
     if(!req || !req.msg || !req.ctx) return
 
     if(req.msg === "/buy_art") {
-      CONV_CTX[req.ctx] = 1
+      CONV_CTX[req.ctx] = {
+        num: 1,
+        style: null,
+      }
     }
 
-    if(!CONV_CTX[req.ctx]) return
+    const ctx = CONV_CTX[req.ctx]
+    if(!ctx || !ctx.num) return
+
     const replies = [
       {
         m: "/buy_art",
@@ -166,29 +171,30 @@ function startMicroService() {
       msg => {
         if(msg === "yes") {
           let resp = [
-            `He'll need an input image from you and you can choose one of these ${ARTSIE_STYLES.length} styles`,
-            ...ARTSIE_STYLES
+            `He'll need an input image from you and you can choose one of these ${ARTSIE_STYLES.length} styles
+${ARTSIE_STYLES.join('\n')}
+`,
+            `Type in the style of your choice (for example: ${ARTSIE_STYLES[0]})`
           ]
           return resp
         }
         if(msg === "no") {
-          CONV_CTX[req.ctx] = 0
-          return [ "Ok sure. If you do want it at any time, just let me know" ]
+          ctx.num = 0
+          return "Ok sure. If you do want it at any time, just let me know"
         }
       },
       msg => {
         if(ARTSIE_STYLES.indexOf(msg) === -1) {
-          CONV_CTX[req.ctx] = 0
+          ctx.num = 0
           return [
             `I didn't understand the style '${msg}'...`,
             `Whenever you want, you can try to /buy_art again`
           ]
         }
-        let style = msg
-        return [ `Great! Let's draw in ${msg} style!` ]
+        return `Great! Let's draw in ${msg} style!`
       }
     ]
-    const curr = replies[CONV_CTX[req.ctx]-1]
+    const curr = replies[ctx.num-1]
     if(typeof curr === 'function') return curr
     if(curr.m === req.msg) return curr.r
   }
