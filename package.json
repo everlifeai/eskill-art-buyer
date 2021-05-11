@@ -1,6 +1,6 @@
 {
   "name": "eskill-art-buyer",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A NFT Art buyer to help puchase from Artsie Bot",
   "main": "index.js",
   "author": "Rajeshkannan R <rrajeshkannanbca@gmail.com>",
