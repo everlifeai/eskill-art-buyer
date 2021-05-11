@@ -1,15 +1,8 @@
 {
   "name": "eskill-art-buyer",
   "version": "1.0.0",
-  "description": "",
+  "description": "A NFT Art buyer to help puchase from Artsie Bot",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
   "author": "Rajeshkannan R <rrajeshkannanbca@gmail.com>",
-  "license": "ISC",
-  "dependencies": {
-    "shortid": "^2.2.16"
-  }
+  "license": "UNLICENSED"
 }
