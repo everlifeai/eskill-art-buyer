@@ -337,7 +337,7 @@ function processMsg(msg, cb) {
 
   let msg
   if(text.startsWith('/art-image-err')) {
-    msg = text.replace('/art-image-err', '').trim()
+    msg = text.replace('/art-image-err', 'Artist Failed:').trim()
   } else {
     msg = text.replace('/art-image','').trim()
   }
