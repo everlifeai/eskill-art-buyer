@@ -27,6 +27,13 @@ function main() {
 
 let msKey = 'eskill-art-buyer-svc'
 
+let TSS_PUBLIC_KEY
+let TSS_URL
+let TSS_HASH
+let TSS_SIGNER
+let TSS_SALE_PRICE
+let TSS_TX_FN_FEE
+
 let ARTSIE_BOT
 let ARTSIE_STYLES
 let CONV_CTX = {}
@@ -36,6 +43,20 @@ function loadConfigInfo() {
   ARTSIE_STYLES = process.env.ARTSIE_STYLES
   if(!ARTSIE_STYLES) return
   ARTSIE_STYLES = ARTSIE_STYLES.split(',').map(s => s.trim())
+
+  TSS_PUBLIC_KEY = process.env.TSS_PUBLIC_KEY
+  if(!TSS_PUBLIC_KEY) return
+  TSS_URL = process.env.TSS_URL
+  if(!TSS_URL) return
+  TSS_HASH = process.env.TSS_HASH
+  if(!TSS_HASH) return
+  TSS_SIGNER = process.env.TSS_SIGNER
+  if(!TSS_SIGNER) return
+  TSS_SALE_PRICE = process.env.TSS_SALE_PRICE
+  if(!TSS_SALE_PRICE) return
+  TSS_TX_FN_FEE = process.env.TSS_TX_FN_FEE
+  if(!TSS_TX_FN_FEE) return
+
   return true
 }
 
@@ -130,14 +151,21 @@ function startMicroService() {
 
 
   svc.on('msg', (req, cb) => {
+    const ctx = CONV_CTX[req.ctx]
     let replies = get_replies_1(req)
-    if(!replies) return cb()
-    if(typeof replies == 'function') replies = replies(req.msg)
-    if(!replies) return cb()
+    if(replies && typeof replies === 'function') replies = replies(req.msg, req.file)
+    if(!replies) {
+      if(ctx) ctx.num = 0
+      return cb()
+    }
 
-    CONV_CTX[req.ctx]++
-    cb(null, true)
+    if(typeof replies === 'function') return replies(req, cb)
+
     if(!Array.isArray(replies)) replies = [replies]
+
+    ctx.num++
+    cb(null, true)
+
     sendReplies(replies, req)
   })
 
@@ -191,106 +219,101 @@ ${ARTSIE_STYLES.join('\n')}
             `Whenever you want, you can try to /buy_art again`
           ]
         }
-        return `Great! Let's draw in ${msg} style!`
-      }
+        ctx.style = msg
+        return [
+          `Great! Let's draw in ${ctx.style} style!`,
+          `Send me the image you'd like to work on
+(Please make sure it's less than 5MB)`
+        ]
+      },
+      (msg, file) => {
+        if(!file) {
+          ctx.num = 0
+          return `Did not get file to work on...stopping`
+        }
+        return letsMakeArt
+      },
     ]
     const curr = replies[ctx.num-1]
     if(typeof curr === 'function') return curr
     if(curr.m === req.msg) return curr.r
   }
 
-    function ignore() {
-        console.log(req)
-        let msg = req.msg ? req.msg.trim() :''
-        if(msg.startsWith('/create_nft_art')){
-          cb(null, true)
-          sendReply(``, req)
-        } else if(msg.startsWith('/yes_create_nft_art')) {
-          cb(null, true)
-          if(style){
-            sendReply('Great, send me the image (less than 5MB)', req)
-          } else {
-            sendReply(``, req)
+  function letsMakeArt(req, cb) {
+    const ctx = CONV_CTX[req.ctx]
+    cb(null, true)
+    writeFileInTmpDir(req.file, (err, p) => {
+      if(err) {
+        u.showErr(err)
+        sendReply('Something went wrong! Please try again after some time', req)
+        return
+      }
+      fs.stat(p, (err, stats) => {
+        if(err) {
+          u.showErr(err)
+          sendReply('Something went wrong! Please try again after some time', req)
+          return
+        }
+        if((stats.size / (1024*1024)) > 5) {
+          sendReply('Uploaded file is too big for me!', req)
+          return
+        }
+        sendReply(`Creating a claimable balance of ${TSS_SALE_PRICE}XLM to pay the artist bot...`)
+        createClaimableBalanceID((err, balid) => {
+          if(err) {
+            u.showErr(err)
+            sendReply('Something went wrong! Please try again after some time', req)
+            return
           }
-        } else if(styles.indexOf(msg)>=0) {
-          cb(null, true)
-          style = msg
-          sendReply(`Great this is going to cost 420XLM. I currently only have 100XLM. 
-          Please pay to my account GASGGAGAGSGASGDAG and then type /yes_create_nft_art`,req)
-        } else if(req.file && style){
-          cb(null, true)
-          writeFileInTmpDir(req.file, (err, filePath)=>{
-            console.log(filePath)
-            if(err) sendReply('Something went wrong!, Please try after sometime', req)
-            else {
-              const stats = fs.statSync(filePath)
-              if((stats.size / (1024*1024))>5){
-                sendReply('Please upload a image less than 5MB', req)
-              } else {
-                createClaimableBalanceID((err, id) => {
-                  console.log('balance id'+id)
-                  if(err) sendReply(err, req) 
-                  else {
-                    if(id){
-                      ssbClient.send({type:'box-blob-save-file',filePath: filePath},(err, boxValue)=> {
-                        if(err) u.showErr(err)
-                        else {
-                          directMessage(req, '/buyer-art-req', ARTSIE_BOT, boxValue, id, style, (err) => {
-                            if(err) u.showErr(err)
-                          })
-                        }
-                      })
-                      sendReply(`Perfect, I just created a claimable balance for 420XLM id: ${id} and have sent it to @artsie_bot. 
-                      This might take a few minutes.. hang on. Once @arstie_bot creates the NFT Asset, 
-                      he's going to use a smart contract (#aaa4d948605fa72d00b3902483ed6670698c5c1c8f05a190237da609a87290a2) running on a Turing Signing Server (https://tss-wrangler.everlife.workers.dev/) to execute the asset transfer. 
-                      I'll let you know as soon as I hear from him.`, req)
-                    } else {
-                      sendReply('Something went wrong with your wallet ', req)
-                    }
-                    
-                    
-                  }
-                })
-              }
+          sendReplies([
+            `Created a claimable balance for ${TSS_SALE_PRICE}XLM with id: ${balid}`,
+            `Sending your picture to the artist bot now`,
+          ], req)
+          ssbClient.send({type:'box-blob-save-file',filePath: p}, (err, blobid)=> {
+            if(err) {
+              u.showErr(err)
+              sendReply('Something went wrong! Please try again after some time', req)
+              return
             }
+            sendReplies([
+              `Perfect! I've parceled it as blob: ${blobid}`,
+              `Let me send across along with the claimable balance to artist ${ARTSIE_BOT}`,
+              `Once the artist bot creates your NFT Asset, we will use the smart contract ${TSS_HASH} on ${TSS_URL} to execute the asset transer`,
+              `This might take a few minutes...hang on. I'll let you know as soon as I hear from him.`
+            ], req)
+            directMessage(req, '/buyer-art-req', ARTSIE_BOT, blobid, balid, ctx.style, err => {
+              if(err) {
+                u.showErr(err)
+                sendReply('Oh no! Something went wrong! Please reclaim your balance and try again', req)
+                return
+              }
+            })
           })
-         
-        } else {
-          cb()
-        } 
-    }
-
-    svc.on('direct-msg', (req, cb) => {
-      processMsg(req.msg, cb)
+        })
+      })
     })
+  }
+
+  svc.on('direct-msg', (req, cb) => {
+    processMsg(req.msg, cb)
+  })
 
 }
 
 function writeFileInTmpDir(fileUrl, cb) {
-  
-    let name = shortid.generate()
-    
-    let inFile = path.join(os.tmpdir(), name)
-    
-    const file = fs.createWriteStream(inFile);
-    if(fileUrl.startsWith('https')) {
-      https.get(fileUrl, function(response) {
-        response.pipe(file);
-        file.on('finish', ()=>{
-          file.close()
-          cb(null, inFile)
-        })
-      });
-    } else {
-      http.get(fileUrl, function(response) {
-        response.pipe(file);
-        file.on('finish', () => {
-          file.close()
-          cb(null, inFile)
-        })
-      }); 
-    }
-  
+  const name = shortid.generate()
+  const f = path.join(os.tmpdir(), name)
+
+  const w = fs.createWriteStream(f);
+  let m = http
+  if(fileUrl.startsWith("https:")) m = https
+  m.get(fileUrl, resp => {
+    resp.pipe(w)
+    w.on('finish', ()=>{
+      w.close()
+      cb(null, f)
+    })
+  })
 }
 
 function sendMsgOnLastChannel(req) {
@@ -304,23 +327,16 @@ function sendMsgOnLastChannel(req) {
  *  outcome/
  * If this is a message for art buyer sent by art seller,
  * relay it to my owner over the last used channel
- * 
- * @param {*} msg 
  */
 function processMsg(msg, cb) {
   let text = msg.value.content.text
   let ctx = msg.value.content.ctx
-  if(text.startsWith('/art-image')){
-    cb(null, true)
-    let artUrl = text.replace('/art-image','').trim()
-    if(ctx) {
-      sendMsgOnLastChannel({msg: artUrl, ctx: ctx})
-    } else sendMsgOnLastChannel({msg: artUrl})
-    
-  } else {
-    cb()
-  }
+  if(!text.startsWith('/art-image')) return cb()
 
+  cb(null, true)
+  const artUrl = text.replace('/art-image','').trim()
+  if(ctx) sendMsgOnLastChannel({msg: artUrl, ctx: ctx})
+  else sendMsgOnLastChannel({msg: artUrl})
 }
 
 
@@ -331,7 +347,6 @@ function processMsg(msg, cb) {
  * replicate it to the recipient
  */
 function directMessage(req, command, userID, msg, claim, style, cb) {
-
   ssbClient.send({
       type: 'new-msg',
       msg: {
@@ -345,7 +360,6 @@ function directMessage(req, command, userID, msg, claim, style, cb) {
       },
   }, cb)
 }
-
 
 
 function createClaimableBalanceID(cb) {
