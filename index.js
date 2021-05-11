@@ -13,10 +13,12 @@ const https = require('https')
  * This is the main entry point where we start.
  * 
  *   outcome/
- * Start our microservice and register with the communication manager
+ * If we have a configured art bot, we start our
+ * microservice and register with the communication manager
  * and direct message
  */
 function main() {
+  if(!loadConfigInfo()) return
   startMicroService()
   registerWithCommMgr()
   registerWithDirectMsg()
@@ -25,7 +27,11 @@ function main() {
 
 let msKey = 'eskill-art-buyer-svc'
 
-const ARTSIE_BOT = '@qiqqqKggAr1Mix06/gP2PT1X7TtBGajJ2w3iZIjTvsc=.ed25519'
+let ARTSIE_BOT
+function loadConfigInfo() {
+  ARTSIE_BOT = process.env.ARTSIE_BOT
+  if(!ARTSIE_BOT) return
+}
 
 const directMsgClient = new cote.Requester({
   name: 'art buyer ->  direct msg',
