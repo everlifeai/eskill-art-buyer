@@ -28,9 +28,14 @@ function main() {
 let msKey = 'eskill-art-buyer-svc'
 
 let ARTSIE_BOT
+let ARTSIE_STYLES
 function loadConfigInfo() {
   ARTSIE_BOT = process.env.ARTSIE_BOT
   if(!ARTSIE_BOT) return
+  ARTSIE_STYLES = process.env.ARTSIE_STYLES
+  if(!ARTSIE_STYLES) return
+  ARTSIE_STYLES = ARTSIE_STYLES.split(',').map(s => s.trim())
+  return true
 }
 
 const directMsgClient = new cote.Requester({
