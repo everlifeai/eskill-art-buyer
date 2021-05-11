@@ -334,9 +334,15 @@ function processMsg(msg, cb) {
   if(!text.startsWith('/art-image')) return cb()
 
   cb(null, true)
-  const artUrl = text.replace('/art-image','').trim()
-  if(ctx) sendMsgOnLastChannel({msg: artUrl, ctx: ctx})
-  else sendMsgOnLastChannel({msg: artUrl})
+
+  let msg
+  if(text.startsWith('/art-image-err')) {
+    msg = text.replace('/art-image-err', '').trim()
+  } else {
+    msg = text.replace('/art-image','').trim()
+  }
+
+  sendMsgOnLastChannel({msg, ctx})
 }
 
 
