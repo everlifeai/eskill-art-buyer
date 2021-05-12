@@ -163,6 +163,8 @@ function startMicroService() {
     if(req.msg === '/nft_info') return nft_info(req, cb)
     let replies = get_replies_1(req)
     if(replies && typeof replies === 'function') replies = replies(req.msg, req.file)
+
+    const ctx = CONV_CTX[req.ctx]
     if(!replies) {
       if(ctx) ctx.num = 0
       return cb()
