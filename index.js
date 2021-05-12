@@ -398,8 +398,12 @@ function directMessage(req, command, userID, msg, claim, style, cb) {
 }
 
 
-function createClaimableBalanceID(cb) {
-  stellarClient.send({type:'claimable-balance-id'}, cb)
+function createClaimableBalance(cb) {
+  stellarClient.send({
+    type:'claimable-balance',
+    recp: TSS_SIGNER,
+    amount: TSS_SALE_PRICE,
+  }, cb)
 }
 
 main()
