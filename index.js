@@ -125,21 +125,26 @@ function registerWithCommMgr() {
   })
 }
 
-function sendReply(msg, req) {
+function sendReply(msg, req, cb) {
   req.type = 'reply'
   req.msg = String(msg)
   commMgrClient.send(req, (err) => {
-      if(err) u.showErr(err)
+    if(err) u.showErr(err)
+    if(cb) cb()
   })
 }
 
-function sendReplies(replies, req) {
+function sendReplies(replies, req, cb) {
     send_replies_1(0)
 
     function send_replies_1(ndx) {
-        if(ndx >= replies.length) return
-        sendReply(replies[ndx], req)
-        setTimeout(() => send_replies_1(ndx+1), 1200)
+        if(ndx >= replies.length) {
+          if(cb) return cb()
+          return
+        }
+        sendReply(replies[ndx], req, () => {
+          setTimeout(() => send_replies_1(ndx+1), 1200)
+        })
     }
 }
 
