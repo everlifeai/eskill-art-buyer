@@ -38,26 +38,30 @@ let ARTSIE_BOT
 let ARTSIE_STYLES
 let CONV_CTX = {}
 function loadConfigInfo() {
-  ARTSIE_BOT = process.env.ARTSIE_BOT
+  ARTSIE_BOT = v('ARTSIE_BOT')
   if(!ARTSIE_BOT) return
-  ARTSIE_STYLES = process.env.ARTSIE_STYLES
+  ARTSIE_STYLES = v('ARTSIE_STYLES')
   if(!ARTSIE_STYLES) return
   ARTSIE_STYLES = ARTSIE_STYLES.split(',').map(s => s.trim())
 
-  TSS_PUBLIC_KEY = process.env.TSS_PUBLIC_KEY
+  TSS_PUBLIC_KEY = v('TSS_PUBLIC_KEY')
   if(!TSS_PUBLIC_KEY) return
-  TSS_URL = process.env.TSS_URL
+  TSS_URL = v('TSS_URL')
   if(!TSS_URL) return
-  TSS_HASH = process.env.TSS_HASH
+  TSS_HASH = v('TSS_HASH')
   if(!TSS_HASH) return
-  TSS_SIGNER = process.env.TSS_SIGNER
+  TSS_SIGNER = v('TSS_SIGNER')
   if(!TSS_SIGNER) return
-  TSS_SALE_PRICE = process.env.TSS_SALE_PRICE
+  TSS_SALE_PRICE = v('TSS_SALE_PRICE')
   if(!TSS_SALE_PRICE) return
-  TSS_TX_FN_FEE = process.env.TSS_TX_FN_FEE
+  TSS_TX_FN_FEE = v('TSS_TX_FN_FEE')
   if(!TSS_TX_FN_FEE) return
 
   return true
+
+  function v(n) {
+    if(process.env[n]) return process.env[n].trim()
+  }
 }
 
 const directMsgClient = new cote.Requester({
