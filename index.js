@@ -288,8 +288,8 @@ ${ARTSIE_STYLES.join('\n')}
           sendReply('Uploaded file is too big for me!', req)
           return
         }
-        sendReply(`Creating a claimable balance of ${TSS_SALE_PRICE}XLM to pay the artist bot...`)
-        createClaimableBalanceID((err, balid) => {
+        sendReply(`Creating a claimable balance of ${TSS_SALE_PRICE}XLM to pay the artist bot...`, req)
+        createClaimableBalance((err, balid) => {
           if(err) {
             u.showErr(err)
             sendReply('Something went wrong! Please try again after some time', req)
