@@ -358,9 +358,9 @@ function sendMsgOnLastChannel(req) {
  * If this is a message for art buyer sent by art seller,
  * relay it to my owner over the last used channel
  */
-function processMsg(msg, cb) {
-  let text = msg.value.content.text
-  let ctx = msg.value.content.ctx
+function processMsg(msg_, cb) {
+  let text = msg_.value.content.text
+  let ctx = msg_.value.content.ctx
   if(!text.startsWith('/art-image')) return cb()
 
   cb(null, true)
