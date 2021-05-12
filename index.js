@@ -160,7 +160,7 @@ function startMicroService() {
 
 
   svc.on('msg', (req, cb) => {
-    const ctx = CONV_CTX[req.ctx]
+    if(req.msg === '/nft_info') return nft_info(req, cb)
     let replies = get_replies_1(req)
     if(replies && typeof replies === 'function') replies = replies(req.msg, req.file)
     if(!replies) {
@@ -177,6 +177,25 @@ function startMicroService() {
 
     sendReplies(replies, req)
   })
+
+  /*    way/
+   * dump NFT info for debugging
+   */
+  function nft_info(req, cb) {
+    cb(null, true)
+    const info = {
+      ARTSIE_BOT,
+      ARTSIE_STYLES,
+
+      TSS_PUBLIC_KEY,
+      TSS_URL,
+      TSS_HASH,
+      TSS_SIGNER,
+      TSS_SALE_PRICE,
+      TSS_TX_FN_FEE,
+    }
+    sendReply(JSON.stringify(info, 0, 2), req)
+  }
 
   /*      problem/
    * We need to carry out a conversation with the user
